@@ -4,7 +4,8 @@
 # Licensed under the MIT License. See https://go.microsoft.com/fwlink/?linkid=2090316 for license information.
 #-------------------------------------------------------------------------------------------------------------
 #
-# Docs: https://github.com/microsoft/vscode-dev-containers/blob/master/script-library/docs/go.md
+# Docs: https://github.com/microsoft/vscode-dev-containers/blob/main/script-library/docs/go.md
+# Maintainer: The VS Code and Codespaces Teams
 #
 # Syntax: ./go-debian.sh [Go version] [GOROOT] [GOPATH] [non-root user] [Add GOPATH, GOROOT to rc files flag] [Install tools flag]
 
@@ -44,33 +45,95 @@ elif [ "${USERNAME}" = "none" ] || ! id -u ${USERNAME} > /dev/null 2>&1; then
     USERNAME=root
 fi
 
-function updaterc() {
+updaterc() {
     if [ "${UPDATE_RC}" = "true" ]; then
         echo "Updating /etc/bash.bashrc and /etc/zsh/zshrc..."
-        echo -e "$1" | tee -a /etc/bash.bashrc >> /etc/zsh/zshrc
+        echo -e "$1" >> /etc/bash.bashrc
+        if [ -f "/etc/zsh/zshrc" ]; then
+            echo -e "$1" >> /etc/zsh/zshrc
+        fi
+    fi
+}
+
+# Figure out correct version of a three part version number is not passed
+find_version_from_git_tags() {
+    local variable_name=$1
+    local requested_version=${!variable_name}
+    if [ "${requested_version}" = "none" ]; then return; fi
+    local repository=$2
+    local prefix=${3:-"tags/v"}
+    local separator=${4:-"."}
+    local last_part_optional=${5:-"false"}    
+    if [ "$(echo "${requested_version}" | grep -o "." | wc -l)" != "2" ]; then
+        local escaped_separator=${separator//./\\.}
+        local last_part
+        if [ "${last_part_optional}" = "true" ]; then
+            last_part="(${escaped_separator}[0-9]+)?"
+        else
+            last_part="${escaped_separator}[0-9]+"
+        fi
+        local regex="${prefix}\\K[0-9]+${escaped_separator}[0-9]+${last_part}$"
+        local version_list="$(git ls-remote --tags ${repository} | grep -oP "${regex}" | tr -d ' ' | tr "${separator}" "." | sort -rV)"
+        if [ "${requested_version}" = "latest" ] || [ "${requested_version}" = "current" ] || [ "${requested_version}" = "lts" ]; then
+            declare -g ${variable_name}="$(echo "${version_list}" | head -n 1)"
+        else
+            set +e
+            declare -g ${variable_name}="$(echo "${version_list}" | grep -E -m 1 "^${requested_version//./\\.}([\\.\\s]|$)")"
+            set -e
+        fi
+    fi
+    if [ -z "${!variable_name}" ] || ! echo "${version_list}" | grep "^${!variable_name//./\\.}$" > /dev/null 2>&1; then
+        echo -e "Invalid ${variable_name} value: ${requested_version}\nValid values:\n${version_list}" >&2
+        exit 1
+    fi
+    echo "${variable_name}=${!variable_name}"
+}
+
+# Function to run apt-get if needed
+apt_get_update_if_needed()
+{
+    if [ ! -d "/var/lib/apt/lists" ] || [ "$(ls /var/lib/apt/lists/ | wc -l)" = "0" ]; then
+        echo "Running apt-get update..."
+        apt-get update
+    else
+        echo "Skipping apt-get update."
+    fi
+}
+
+# Checks if packages are installed and installs them if not
+check_packages() {
+    if ! dpkg -s "$@" > /dev/null 2>&1; then
+        apt_get_update_if_needed
+        apt-get -y install --no-install-recommends "$@"
     fi
 }
 
 export DEBIAN_FRONTEND=noninteractive
 
 # Install curl, tar, git, other dependencies if missing
-if ! dpkg -s curl ca-certificates tar git g++ gcc libc6-dev make pkg-config > /dev/null 2>&1; then
-    if [ ! -d "/var/lib/apt/lists" ] || [ "$(ls /var/lib/apt/lists/ | wc -l)" = "0" ]; then
-        apt-get update
-    fi
-    apt-get -y install --no-install-recommends curl ca-certificates tar git g++ gcc libc6-dev make pkg-config
+check_packages curl ca-certificates tar g++ gcc libc6-dev make pkg-config
+if ! type git > /dev/null 2>&1; then
+    apt_get_update_if_needed
+    apt-get -y install --no-install-recommends git
 fi
 
-# Get latest version number if latest is specified
-if [ "${TARGET_GO_VERSION}" = "latest" ] ||  [ "${TARGET_GO_VERSION}" = "current" ] ||  [ "${TARGET_GO_VERSION}" = "lts" ]; then
-    TARGET_GO_VERSION=$(curl -sSL "https://golang.org/VERSION?m=text" | sed -n '/^go/s///p' )
-fi
+# Get closest match for version number specified
+find_version_from_git_tags TARGET_GO_VERSION "https://go.googlesource.com/go" "tags/go" "." "true"
+
+architecture="$(uname -m)"
+case $architecture in
+    x86_64) architecture="amd64";;
+    aarch64 | armv8*) architecture="arm64";;
+    aarch32 | armv7* | armvhf*) architecture="armv6l";;
+    i?86) architecture="386";;
+    *) echo "(!) Architecture $architecture unsupported"; exit 1 ;;
+esac
 
 # Install Go
 GO_INSTALL_SCRIPT="$(cat <<EOF
     set -e
     echo "Downloading Go ${TARGET_GO_VERSION}..."
-    curl -sSL -o /tmp/go.tar.gz "https://golang.org/dl/go${TARGET_GO_VERSION}.linux-amd64.tar.gz"
+    curl -sSL -o /tmp/go.tar.gz "https://golang.org/dl/go${TARGET_GO_VERSION}.linux-${architecture}.tar.gz"
     echo "Extracting Go ${TARGET_GO_VERSION}..."
     tar -xzf /tmp/go.tar.gz -C "${TARGET_GOROOT}" --strip-components=1
     rm -f /tmp/go.tar.gz
@@ -84,52 +147,43 @@ else
     echo "Go already installed. Skipping."
 fi
 
-# Install Go tools
-GO_TOOLS_WITH_MODULES="\
-    golang.org/x/tools/gopls \
-    honnef.co/go/tools/... \
-    golang.org/x/tools/cmd/gorename \
-    golang.org/x/tools/cmd/goimports \
-    golang.org/x/tools/cmd/guru \
-    golang.org/x/lint/golint \
-    github.com/mdempsky/gocode \
-    github.com/cweill/gotests/... \
-    github.com/haya14busa/goplay/cmd/goplay \
-    github.com/sqs/goreturns \
-    github.com/josharian/impl \
-    github.com/davidrjenni/reftools/cmd/fillstruct \
-    github.com/uudashr/gopkgs/v2/cmd/gopkgs \
-    github.com/ramya-rao-a/go-outline \
-    github.com/acroca/go-symbols \
-    github.com/godoctor/godoctor \
-    github.com/rogpeppe/godef \
-    github.com/zmb3/gogetdoc \
-    github.com/fatih/gomodifytags \
-    github.com/mgechev/revive \
-    github.com/go-delve/delve/cmd/dlv"
+# Install Go tools that are isImportant && !replacedByGopls based on
+# https://github.com/golang/vscode-go/blob/0ff533d408e4eb8ea54ce84d6efa8b2524d62873/src/goToolsInformation.ts
+# Exception `dlv-dap` is a copy of github.com/go-delve/delve/cmd/dlv built from the master.
+GO_TOOLS="\
+    golang.org/x/tools/gopls@latest \
+    honnef.co/go/tools/cmd/staticcheck@latest \
+    golang.org/x/lint/golint@latest \
+    github.com/mgechev/revive@latest \
+    github.com/uudashr/gopkgs/v2/cmd/gopkgs@latest \
+    github.com/ramya-rao-a/go-outline@latest \
+    github.com/go-delve/delve/cmd/dlv@latest \
+    github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
 if [ "${INSTALL_GO_TOOLS}" = "true" ]; then
     echo "Installing common Go tools..."
     export PATH=${TARGET_GOROOT}/bin:${PATH}
-    mkdir -p /tmp/gotools
+    mkdir -p /tmp/gotools /usr/local/etc/vscode-dev-containers ${TARGET_GOPATH}/bin
     cd /tmp/gotools
     export GOPATH=/tmp/gotools
     export GOCACHE=/tmp/gotools/cache
 
-    # Go tools w/module support
-    export GO111MODULE=on
-    (echo "${GO_TOOLS_WITH_MODULES}" | xargs -n 1 go get -v )2>&1
+    # Use go get for versions of go under 1.16
+    go_install_command=install
+    if [[ "1.16" > "$(go version | grep -oP 'go\K[0-9]+\.[0-9]+(\.[0-9]+)?')" ]]; then
+        export GO111MODULE=on
+        go_install_command=get
+        echo "Go version < 1.16, using go get."
+    fi 
 
-    # gocode-gomod
-    export GO111MODULE=auto
-    go get -v -d github.com/stamblerre/gocode 2>&1
-    go build -o gocode-gomod github.com/stamblerre/gocode
-
-    # golangci-lint
-    curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${TARGET_GOPATH}/bin 2>&1
+    (echo "${GO_TOOLS}" | xargs -n 1 go ${go_install_command} -v )2>&1 | tee -a /usr/local/etc/vscode-dev-containers/go.log
 
     # Move Go tools into path and clean up
     mv /tmp/gotools/bin/* ${TARGET_GOPATH}/bin/
-    mv gocode-gomod ${TARGET_GOPATH}/bin/
+
+    # install dlv-dap (dlv@master)
+    go ${go_install_command} -v github.com/go-delve/delve/cmd/dlv@master 2>&1 | tee -a /usr/local/etc/vscode-dev-containers/go.log
+    mv /tmp/gotools/bin/dlv ${TARGET_GOPATH}/bin/dlv-dap
+
     rm -rf /tmp/gotools
     chown -R ${USERNAME} "${TARGET_GOPATH}"
 fi
@@ -142,7 +196,6 @@ export GOROOT="${TARGET_GOROOT}"
 if [[ "\${PATH}" != *"\${GOROOT}/bin"* ]]; then export PATH="\${PATH}:\${GOROOT}/bin"; fi
 EOF
 )"
-
 
 echo "Done!"
 
