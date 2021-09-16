@@ -39,7 +39,7 @@
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
 		"GitHub.vscode-pull-request-github",
-		"MS-vsliveshare.vsliveshare",,
+		"MS-vsliveshare.vsliveshare",
 		"ms-vscode.azure-account",
 		"ms-vscode.azurecli",
 		"ms-azure-devops.azure-pipelines",
