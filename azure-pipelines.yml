@@ -1,0 +1,124 @@
+trigger:
+- main
+
+variables:
+  resource-group: "github-workshops"
+  BuildConfiguration: "Release"
+  BuildPlatform: "any cpu"
+  Parameters.RestoreBuildProjects: "**/*.csproj"
+  Parameters.TestProjects: "**/*[Tt]ests/*.csproj"
+  webapp_name: tailwind-github-demo
+
+pool:
+  name: ubuntu-latest
+
+stages:
+- stage: 'Build'
+  displayName: 'Build'
+  jobs:
+  - job: 
+    displayName: 'Build on Windows'
+    steps:
+    - task: NodeTool@0
+      displayName: 'Use Node 10.16.3'
+      inputs:
+        versionSpec: 10.16.3
+
+    - task: Npm@1
+      displayName: 'npm install'
+      inputs:
+        workingDir: TailwindTraders.Website/Source/Tailwind.Traders.Web/ClientApp
+        verbose: false
+
+    - task: DotNetCoreCLI@2
+      displayName: Restore
+      inputs:
+        command: restore
+        projects: '$(Parameters.RestoreBuildProjects)'
+
+    - task: DotNetCoreCLI@2
+      displayName: Build
+      inputs:
+        projects: '$(Parameters.RestoreBuildProjects)'
+        arguments: '--configuration $(BuildConfiguration)'
+
+    - task: DotNetCoreCLI@2
+      displayName: Test
+      inputs:
+        command: test
+        projects: '$(Parameters.TestProjects)'
+        arguments: '--configuration $(BuildConfiguration)'
+
+    - task: DotNetCoreCLI@2
+      displayName: Publish
+      inputs:
+        command: publish
+        publishWebProjects: True
+        arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)'
+        zipAfterPublish: True
+
+    - task: CopyFiles@2
+      displayName: 'Copy Files to: $(build.artifactstagingdirectory)/appservice'
+      inputs:
+        SourceFolder: Deploy/appservice
+        TargetFolder: '$(build.artifactstagingdirectory)/appservice'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact'
+      name: build
+      inputs:
+        PathtoPublish: '$(build.artifactstagingdirectory)'
+      condition: succeededOrFailed()
+
+- stage: PublishTest
+  displayName: 'Publish Test'
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  dependsOn: 'Build'
+  jobs:
+    - deployment: 
+      environment: Test
+      strategy: 
+        runOnce:
+         deploy:
+          steps:
+          - task: DownloadBuildArtifacts@1
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: 'build'
+              downloadPath: '$(System.ArtifactsDirectory)'
+
+          - task: AzureResourceManagerTemplateDeployment@3
+            displayName: 'Create or update Azure resource group'
+            inputs:
+              azureResourceManagerConnection: 'Microsoft Azure Sponsorship 2020 (f317d45c-55f5-4341-8d49-990b06d1c9a5)'
+              subscriptionId: 'f317d45c-55f5-4341-8d49-990b06d1c9a5'
+              resourceGroupName: '$(resource-group)'
+              location: 'West Europe'
+              csmFile: '$(System.DefaultWorkingDirectory)/drop/drop/appservice/template.json'
+              csmParametersFile: '$(System.DefaultWorkingDirectory)/drop/drop/appservice/parameters.json'
+              overrideParameters: '-subscriptionId "f317d45c-55f5-4341-8d49-990b06d1c9a5" -name $(webappname) -location "West Europe" -hostingPlanName $(resource-group) -serverFarmResourceGroup $(resource-group) -alwaysOn true -sku "PremiumV2" -skuCode "P1v2" -workerSize "3" -workerSizeId "3" -numberOfWorkers "1" -linuxFxVersion "DOTNETCORE|5.0"'
+
+- stage: PublishProd
+  displayName: 'Publish Prod'
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  dependsOn: 'PublishTest'
+  jobs:
+    - deployment: 
+      environment: Prod
+      strategy: 
+        runOnce:
+         deploy:
+          steps:
+          - task: DownloadBuildArtifacts@1
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: 'build'
+              downloadPath: '$(System.ArtifactsDirectory)'
+          - task: AzureRmWebAppDeployment@4
+            displayName: 'Deploy Azure App Service'
+            inputs:
+              azureSubscription: "Microsoft Azure Sponsorship 2020 (f317d45c-55f5-4341-8d49-990b06d1c9a5)"
+              appType: "webApp"
+              WebAppName: $(webapp_name)
