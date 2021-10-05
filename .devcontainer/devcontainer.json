@@ -53,5 +53,5 @@
 	// "forwardPorts": [],
 
 	// "oryx build" will automatically install your dependencies and attempt to build your project
-	"postCreateCommand": "oryx build -p virtualenv_name=.venv --log-file /tmp/oryx-build.log --manifest-dir /tmp || echo 'Could not auto-build. Skipping.' && docker pull ghcr.io/valet-customers/valet-cli"
+	"postCreateCommand": "oryx build -p virtualenv_name=.venv --log-file /tmp/oryx-build.log --manifest-dir /tmp || echo 'Could not auto-build. Skipping.' && docker pull ghcr.io/valet-customers/valet-cli:0.1.0.10368"
 }
