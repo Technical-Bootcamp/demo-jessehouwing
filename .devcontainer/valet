@@ -8,7 +8,7 @@ VALET_IMAGE=${VALET_IMAGE:-"$VALET_REGISTRY/valet-customers/valet-cli"}
 # pulling the latest can cause weird issues because the team is moving fast
 # better test with the latest tag before a bootcamp
 # find the last version here: https://github.com/valet-customers/distribution/pkgs/container/valet-cli
-VALET_IMAGE_VERSION=${VALET_IMAGE_VERSION:-"0.1.0.10368"} <-- version from 20211005
+VALET_IMAGE_VERSION=${VALET_IMAGE_VERSION:-"0.1.0.10368"} #<-- version from 20211005
 
 VALET_TOKEN_FILE=${VALET_TOKEN_FILE:-".env.local"}
 VALET_ENV_VARS=('GITHUB_ACCESS_TOKEN' 'AZURE_DEVOPS_ACCESS_TOKEN' 'GITHUB_INSTANCE_URL' 'JENKINSFILE_ACCESS_TOKEN' 'JENKINS_USERNAME' 'JENKINS_ACCESS_TOKEN' 'JENKINS_INSTANCE_URL' 'TRAVIS_CI_ACCESS_TOKEN' 'TRAVIS_CI_INSTANCE_URL' 'TRAVIS_CI_SOURCE_GITHUB_ACCESS_TOKEN' 'TRAVIS_CI_SOURCE_GITHUB_INSTANCE_URL' 'YAML_VERBOSITY' 'HTTP_PROXY' 'HTTPS_PROXY' 'NO_PROXY' 'OCTOKIT_PROXY' 'OCTOKIT_SSL_VERIFY_MODE')
