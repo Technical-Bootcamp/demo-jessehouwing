@@ -22,19 +22,17 @@ jobs:
       run: npm install
       working-directory: TailwindTraders.Website/Source/Tailwind.Traders.Web/ClientApp
     - name: Restore
-      run: dotnet restore ${{ env.Parameters_RestoreBuildProjects }} --verbosity "Detailed"
+      shell: bash
+      run: shopt -s globstar; for f in ./**/*.csproj; do dotnet restore $f  ; done
     - name: Build
-      run: dotnet build ${{ env.Parameters_RestoreBuildProjects }} --configuration ${{ env.BuildConfiguration }}
+      shell: bash
+      run: shopt -s globstar; for f in ./**/*.csproj; do dotnet build $f --configuration ${{ env.BUILDCONFIGURATION }} ; done
     - name: Test
-      run: dotnet test ${{ env.Parameters_TestProjects }} --logger trx --results-directory "${{ runner.temp }}" --configuration ${{ env.BuildConfiguration }}
-    - name: Test
-      uses: NasAmin/trx-parser@v0.0.3
-      if: always()
-      with:
-        TRX_PATH: "${{ runner.temp }}"
-        REPO_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      shell: bash
+      run: shopt -s globstar; for f in ./**/*.csproj; do dotnet test $f --configuration ${{ env.BUILDCONFIGURATION }} ; done
     - name: Publish
-      run: dotnet publish ${{ env.Parameters_RestoreBuildProjects }} --configuration ${{ env.BuildConfiguration }} --output ${{ runner.temp }}
+      shell: bash
+      run: shopt -s globstar; for f in ./**/*.csproj; do dotnet publish $f --configuration ${{ env.BUILDCONFIGURATION }} --output ${{ runner.temp }} ; done
     # The following script preserves the globbing behavior of the CopyFiles task.
     # Refer to this transformer's documentation for an alternative that will work in simple cases.
     - name: 'Copy Files to: ${{ runner.temp }}/appservice'
