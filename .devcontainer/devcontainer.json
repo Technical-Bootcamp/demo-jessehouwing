@@ -3,10 +3,6 @@
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
-	"hostRequirements": {
-		"cpus": 8,
-   		"storage": "32gb" 
-	},
 	"settings": {
 		"go.toolsManagement.checkForUpdates": "local",
 		"go.useLanguageServer": true,
