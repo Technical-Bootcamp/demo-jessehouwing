@@ -26,13 +26,13 @@ jobs:
       run: shopt -s globstar; for f in ./**/*.csproj; do dotnet restore $f  ; done
     - name: Build
       shell: bash
-      run: shopt -s globstar; for f in ./**/*.csproj; do dotnet build $f --configuration ${{ env.BUILDCONFIGURATION }} ; done
+      run: shopt -s globstar; for f in ./**/*.csproj; do dotnet build $f --configuration ${{ env.BuildConfiguration }} ; done
     - name: Test
       shell: bash
-      run: shopt -s globstar; for f in ./**/*.csproj; do dotnet test $f --configuration ${{ env.BUILDCONFIGURATION }} ; done
+      run: shopt -s globstar; for f in ./**/*.csproj; do dotnet test $f --configuration ${{ env.BuildConfiguration }} ; done
     - name: Publish
       shell: bash
-      run: shopt -s globstar; for f in ./**/*.csproj; do dotnet publish $f --configuration ${{ env.BUILDCONFIGURATION }} --output ${{ runner.temp }} ; done
+      run: shopt -s globstar; for f in ./**/*.csproj; do dotnet publish $f --configuration ${{ env.BuildConfiguration }} --output ${{ runner.temp }} ; done
     # The following script preserves the globbing behavior of the CopyFiles task.
     # Refer to this transformer's documentation for an alternative that will work in simple cases.
     - name: 'Copy Files to: ${{ runner.temp }}/appservice'
