@@ -1,0 +1,72 @@
+name: TailWindTraders/Classic CI
+on:
+  workflow_dispatch:
+env:
+  BuildConfiguration: Release
+  BuildPlatform: any cpu
+  Parameters_RestoreBuildProjects: "**/*.csproj"
+  Parameters_TestProjects: "**/*[Tt]ests/*.csproj"
+  system_debug: 'false'
+jobs:
+  Job_1:
+    name: Agent job 1
+    runs-on: ubuntu-20.04
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+    - name: Use Node 10.16.3
+      uses: actions/setup-node@v2
+      with:
+        node-version: 10.16.3
+    - name: npm install
+      run: npm install
+      working-directory: TailwindTraders.Website/Source/Tailwind.Traders.Web/ClientApp
+    - name: Restore
+      run: dotnet restore ${{ env.Parameters_RestoreBuildProjects }} --verbosity "Detailed"
+    - name: Build
+      run: dotnet build ${{ env.Parameters_RestoreBuildProjects }} --configuration ${{ env.BuildConfiguration }}
+    - name: Test
+      run: dotnet test ${{ env.Parameters_TestProjects }} --logger trx --results-directory "${{ runner.temp }}" --configuration ${{ env.BuildConfiguration }}
+    - name: Test
+      uses: NasAmin/trx-parser@v0.0.3
+      if: always()
+      with:
+        TRX_PATH: "${{ runner.temp }}"
+        REPO_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+    - name: Publish
+      run: dotnet publish ${{ env.Parameters_RestoreBuildProjects }} --configuration ${{ env.BuildConfiguration }} --output ${{ runner.temp }}
+    # The following script preserves the globbing behavior of the CopyFiles task.
+    # Refer to this transformer's documentation for an alternative that will work in simple cases.
+    - name: 'Copy Files to: ${{ runner.temp }}/appservice'
+      uses: actions/github-script@v3
+      env:
+        TARGET_FOLDER: "${{ runner.temp }}/appservice"
+        SOURCE_FOLDER: Deploy/appservice
+        CLEAN_TARGET_FOLDER: false
+        FLATTEN_FOLDERS: false
+        OVERWRITE: false
+        CONTENTS: "**"
+      with:
+        github-token: "${{ secrets.GITHUB_TOKEN }}"
+        script: |-
+          const fs = require('fs').promises
+          const path = require('path')
+          const target = path.resolve(process.env.TARGET_FOLDER)
+          process.chdir(process.env.SOURCE_FOLDER || '.')
+          if (process.env.CLEAN_TARGET_FOLDER === 'true') await io.rmRF(target)
+          const flattenFolders = process.env.FLATTEN_FOLDERS === 'true'
+          const options = {force: process.env.OVERWRITE === 'true'}
+          const globber = await glob.create(process.env.CONTENTS || '**')
+          for await (const file of globber.globGenerator()) {
+            if ((await fs.lstat(file)).isDirectory()) continue
+            const filename = flattenFolders ? path.basename(file) : file.substring(process.cwd().length)
+            const dest = path.join(target, filename)
+            await io.mkdirP(path.dirname(dest))
+            await io.cp(file, dest, options)
+          }
+    - name: Publish Artifact
+      if: success() || failure()
+      uses: actions/upload-artifact@v2
+      with:
+        name: drop
+        path: "\\\\my\\share\\${{ github.workflow }}\\${{ github.run_number }}"
