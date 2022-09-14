@@ -338,3 +338,7 @@ Deploy/helm/__values/*
 
 .venv/
 valet/logs/
+valet/TailWindTraders/
+valet/AuditSummary.md
+valet/workflow_usage.csv
+valet/audit_summary.csv
