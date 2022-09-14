@@ -10,7 +10,6 @@ RUN bash /tmp/library-scripts/azcli-debian.sh \
 USER codespace
 
 RUN az extension add --name azure-devops
-RUN gh extension install github/gh-valet
 
 COPY --chown=codespace:codespace ./valet /usr/bin/valet
 RUN chmod +x /usr/bin/valet
