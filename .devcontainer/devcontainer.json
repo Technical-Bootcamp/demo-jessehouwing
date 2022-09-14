@@ -4,8 +4,13 @@
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
+
 	"hostRequirements": {
    		"storage": "64gb" 
+	},
+
+	"features": {
+		"azure-cli": "latest"
 	},
 
 	// Configure tool-specific properties.
@@ -42,8 +47,6 @@
 				"ms-vscode.azure-account",
 				"ms-vscode.azurecli",
 				"ms-azure-devops.azure-pipelines",
-				"ms-azuretools.vscode-docker",
-				"ms-vscode.powershell",
 				"redhat.vscode-yaml",
 				"cschleiden.vscode-github-actions"
 			]
@@ -68,5 +71,5 @@
 	// "forwardPorts": [],
 
 	// "oryx build" will automatically install your dependencies and attempt to build your project
-	"postCreateCommand": "docker pull ghcr.io/valet-customers/valet-cli:latest && gh extension install github/gh-valet"
+	"postCreateCommand": "git update-index --assume-unchanged ./valet/.env.local && docker pull ghcr.io/valet-customers/valet-cli:latest && gh extension install github/gh-valet && az extension add --name azure-devops"
 }
