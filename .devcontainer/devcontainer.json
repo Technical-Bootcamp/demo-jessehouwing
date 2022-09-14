@@ -1,9 +1,7 @@
 {
 	"name": "GitHub Codespaces with Valet",
 
-	"build": {
-		"dockerfile": "Dockerfile"
-	},
+  	"image": "mcr.microsoft.com/vscode/devcontainers/universal:linux",
 
 	"hostRequirements": {
    		"storage": "64gb" 
