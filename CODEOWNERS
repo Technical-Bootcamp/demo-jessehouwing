@@ -8,4 +8,5 @@
 # /Documents @fluentbytes/docsteam
 # Create your own rules below this line without the # sign
 
-/docs jessehouwing
+/docs @jessehouwing
+/src @jaspergilhuis
