@@ -7,3 +7,5 @@
 # The team will need explicit write permissions to the repo for this to work!
 # /Documents @fluentbytes/docsteam
 # Create your own rules below this line without the # sign
+
+/docs @jessehouwing
