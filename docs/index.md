@@ -1,4 +1,4 @@
-# Tailwind Traders Website
+# Tailwind Traders Website 🚀
 
 ![Tailwind Traders Website](Website.png)
 All changes in git repo, so if branch protected, you need reviews!
