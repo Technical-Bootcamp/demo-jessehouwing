@@ -10,4 +10,5 @@
 
 /docs @jessehouwing
 /src @jaspergilhuis
-/valet @microsoft-bootcamp/workshopowners
+/valet @microsoft-bootcamp/workshopowners\
+.github/CODEOWNERS @jessehouwing
