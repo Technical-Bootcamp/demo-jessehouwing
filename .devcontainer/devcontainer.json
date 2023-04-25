@@ -69,5 +69,6 @@
 	// "forwardPorts": [],
 
 	// "oryx build" will automatically install your dependencies and attempt to build your project
-	"postCreateCommand": "git update-index --assume-unchanged ./valet/.env.local && docker pull ghcr.io/valet-customers/valet-cli:latest && gh extension install github/gh-valet && az extension add --name azure-devops"
+	"postCreateCommand": "docker pull ghcr.io/valet-customers/valet-cli:latest",
+	"updateContentCommand": "git update-index --assume-unchanged ./valet/.env.local && gh extension install github/gh-valet && az extension add --name azure-devops"
 }
