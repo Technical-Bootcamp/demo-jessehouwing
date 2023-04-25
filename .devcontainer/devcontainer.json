@@ -69,6 +69,6 @@
 	// "forwardPorts": [],
 
 	// "oryx build" will automatically install your dependencies and attempt to build your project
-	"onCreateCommand": "docker login --username $GHCR_CONTAINER_REGISTRY_USERNAME -p $(echo $GHCR_CONTAINER_REGISTRY_PASSWORD) $GHCR_CONTAINER_REGISTRY_SERVER && docker pull ghcr.io/valet-customers/valet-cli:latest",
+	"onCreateCommand": "echo $GHCR_CONTAINER_REGISTRY_USERNAME && echo $GHCR_CONTAINER_REGISTRY_SERVER && docker login --username $GHCR_CONTAINER_REGISTRY_USERNAME --password $GHCR_CONTAINER_REGISTRY_PASSWORD $GHCR_CONTAINER_REGISTRY_SERVER && docker pull ghcr.io/valet-customers/valet-cli:latest",
 	"updateContentCommand": "git update-index --assume-unchanged ./valet/.env.local && gh extension install github/gh-valet && az extension add --name azure-devops"
 }
