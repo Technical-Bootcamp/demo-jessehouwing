@@ -10,9 +10,18 @@
 	"features": {
 		"azure-cli": "latest"
 	},
-
-	// Configure tool-specific properties.
 	"customizations": {
+		// Configure properties specific to Codespaces.
+		"codespaces": {
+			"repositories": {
+				"github/gh-valet": {
+					"permissions": {
+						"contents": "read",
+		    				"packages": "read"
+					}
+				}
+			}
+		},
 		// Configure properties specific to VS Code.
 		"vscode": {
 			// Set *default* container specific settings.json values on container create.
