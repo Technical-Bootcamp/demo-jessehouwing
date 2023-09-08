@@ -67,9 +67,5 @@
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
-	// "oryx build" will automatically install your dependencies and attempt to build your project
-	//"onCreateCommand": "echo echo username $GHCR_CONTAINER_REGISTRY_USERNAME && echo server: $GHCR_CONTAINER_REGISTRY_SERVER && echo password: $GHCR_CONTAINER_REGISTRY_PASSWORD",
-	//"updateContentCommand": "echo echo username $GHCR_CONTAINER_REGISTRY_USERNAME && echo server: $GHCR_CONTAINER_REGISTRY_SERVER && echo password: $GHCR_CONTAINER_REGISTRY_PASSWORD"
-	//"updateContentCommand": "git update-index --assume-unchanged ./valet/.env.local && az extension add --name azure-devops && gh extensions install github/gh-actions-importer && gh actions-importer update",
-	"onCreateCommand": "echo THIS SHOULD SHOW"
+	"updateContentCommand": "git update-index --assume-unchanged ./valet/.env.local && az extension add --name azure-devops && GITHUB_TOKEN= gh extensions install github/gh-actions-importer && GITHUB_TOKEN= gh actions-importer update"
 }
