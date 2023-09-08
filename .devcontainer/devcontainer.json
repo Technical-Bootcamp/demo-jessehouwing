@@ -67,5 +67,5 @@
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
-	"updateContentCommand": "git update-index --assume-unchanged ./valet/.env.local && az extension add --name azure-devops && GITHUB_TOKEN= gh extensions install github/gh-actions-importer && GITHUB_TOKEN= gh actions-importer update"
+	"updateContentCommand": "git pull && git update-index --assume-unchanged ./valet/.env.local && az extension add --name azure-devops && GITHUB_TOKEN= gh extensions install github/gh-actions-importer && GITHUB_TOKEN= gh actions-importer update"
 }
